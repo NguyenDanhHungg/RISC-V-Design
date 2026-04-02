@@ -1,0 +1,64 @@
+Bộ mã hóa control quy ước trước như sau:
+ImmSel
+    localparam IMM_I = 3'b000;
+    localparam IMM_S = 3'b001;
+    localparam IMM_B = 3'b010;
+    localparam IMM_U = 3'b011;
+    localparam IMM_J = 3'b100;
+
+ALUSel
+    localparam ALU_ADD  = 4'b0000;
+    localparam ALU_SUB  = 4'b0001;
+    localparam ALU_AND  = 4'b0010;
+    localparam ALU_OR   = 4'b0011;
+    localparam ALU_XOR  = 4'b0100;
+    localparam ALU_SLT  = 4'b0101;
+    localparam ALU_SLTU = 4'b0110;
+    localparam ALU_SLL  = 4'b0111;
+    localparam ALU_SRL  = 4'b1000;
+    localparam ALU_SRA  = 4'b1001;
+
+WBSel
+    localparam WB_MEM = 2'b00;
+    localparam WB_ALU = 2'b01;
+    localparam WB_PC4 = 2'b10;
+
+Giải thích luồng hoạt động: 
+1. Trường hợp add x3, x1, x2
+    IMEM xuất ra instruction
+    RegFile đọc x1, x2
+    Control Unit nhận ra đây là R-type
+    ASel = 0 nên ALU A = rs1_data
+    BSel = 0 nên ALU B = rs2_data
+    ALUSel = ADD
+    WBSel = ALU
+    RegWEn = 1
+    ghi kết quả về x3
+    PC = PC + 4
+
+2. Trường hợp lw x5, 0(x1)
+    đọc x1
+    ImmGen sinh imm = 0
+    ALU tính địa chỉ x1 + 0
+    DMEM đọc dữ liệu tại địa chỉ đó
+    WBSel = MEM
+    ghi dữ liệu vào x5
+    Trường hợp sw x5, 4(x1)
+    ALU tính địa chỉ x1 + 4
+    DMEM ghi x5 xuống địa chỉ đó
+    không ghi về RegFile
+
+3. Trường hợp beq x1, x2, label
+    Branch comparator kiểm tra br_eq
+    Nếu bằng nhau, pc_sel = 1
+    ALU tính target = PC + imm
+    pc_next = target
+    Nếu không, pc_next = PC+4
+    Trường hợp jal x1, label
+    ghi PC+4 vào x1
+    PC nhảy đến PC + imm
+
+Chạy mô phỏng: 
+iverilog -o sim top.v pc_reg.v imem.v dmem.v reg_file.v imm_gen.v branch_comp.v alu.v control_unit.v tb_top.v
+vvp sim
+gtkwave wave.vcd
