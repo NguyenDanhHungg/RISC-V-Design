@@ -1,0 +1,39 @@
+addi x1, x0, 5
+addi x2, x0, 7
+add x3, x1, x2
+
+chạy lần lượt
+1. addi x1, x0, 5
+    - x1 = 5
+Từ tb_top
+    clk
+    rst
+Từ dut
+    pc
+    pc_plus4
+    pc_next
+    instr
+    imm
+    rs1_data
+    rs2_data
+    alu_y
+    wb_data
+    pc_sel
+    reg_wen
+    mem_rw
+    rd
+
+Mục đích của từng tín hiệu
+    pc: CPU đang đứng ở lệnh nào
+    pc_plus4: địa chỉ lệnh kế tiếp bình thường
+    pc_next: địa chỉ thực sự sẽ nạp vào PC
+    instr: mã lệnh đọc từ imem
+    imm: immediate tách ra từ instruction
+    rs1_data, rs2_data: dữ liệu từ thanh ghi nguồn
+    alu_y: kết quả ALU
+    wb_data: dữ liệu ghi về thanh ghi
+    pc_sel: có branch/jump hay không
+    reg_wen: có ghi thanh ghi hay không
+    mem_rw: có ghi memory hay không
+    rd: thanh ghi đích
+

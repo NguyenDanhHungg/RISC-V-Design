@@ -1,28 +1,32 @@
 module control_unit (
-    input  wire [31:0] instr,
-    input  wire        br_eq,
-    input  wire        br_lt,
-    output reg         pc_sel,
-    output reg  [2:0]  imm_sel,
-    output reg         reg_wen,
-    output reg         br_un,
-    output reg         b_sel,
-    output reg         a_sel,
-    output reg  [3:0]  alu_sel,
-    output reg         mem_rw,
-    output reg  [1:0]  wb_sel
+    input  wire [31:0] instr,     // lệnh hiện tại
+    input  wire        br_eq,     // kết quả so sánh bằng
+    input  wire        br_lt,     // kết quả so sánh nhỏ hơn
+
+    output reg         pc_sel,    // chọn PC tiếp theo
+    output reg  [2:0]  imm_sel,   // chọn loại immediate
+    output reg         reg_wen,   // cho phép ghi thanh ghi
+    output reg         br_un,     // so sánh branch unsigned hay signed
+    output reg         b_sel,     // chọn ALU B = rs2 hay imm
+    output reg         a_sel,     // chọn ALU A = rs1 hay PC
+    output reg  [3:0]  alu_sel,   // chọn phép toán ALU
+    output reg         mem_rw,    // ghi data memory
+    output reg  [1:0]  wb_sel     // chọn dữ liệu ghi về RegFile
 );
 
+    // Tách các trường quan trọng của instruction
     wire [6:0] opcode = instr[6:0];
     wire [2:0] funct3 = instr[14:12];
     wire [6:0] funct7 = instr[31:25];
 
+    // Mã chọn loại immediate
     localparam IMM_I = 3'b000;
     localparam IMM_S = 3'b001;
     localparam IMM_B = 3'b010;
     localparam IMM_U = 3'b011;
     localparam IMM_J = 3'b100;
 
+    // Mã chọn ALU
     localparam ALU_ADD  = 4'b0000;
     localparam ALU_SUB  = 4'b0001;
     localparam ALU_AND  = 4'b0010;
@@ -34,12 +38,13 @@ module control_unit (
     localparam ALU_SRL  = 4'b1000;
     localparam ALU_SRA  = 4'b1001;
 
-    localparam WB_MEM = 2'b00;
-    localparam WB_ALU = 2'b01;
-    localparam WB_PC4 = 2'b10;
+    // Mã chọn write-back
+    localparam WB_MEM = 2'b00;  // ghi dữ liệu từ memory
+    localparam WB_ALU = 2'b01;  // ghi dữ liệu từ ALU
+    localparam WB_PC4 = 2'b10;  // ghi PC + 4
 
     always @(*) begin
-        // default
+        // Giá trị mặc định để tránh latch
         pc_sel  = 1'b0;
         imm_sel = IMM_I;
         reg_wen = 1'b0;
@@ -51,11 +56,15 @@ module control_unit (
         wb_sel  = WB_ALU;
 
         case (opcode)
-            7'b0110011: begin // R-type
-                reg_wen = 1'b1;
-                a_sel   = 1'b0;
-                b_sel   = 1'b0;
-                wb_sel  = WB_ALU;
+
+            // =====================
+            // R-type: add, sub, and, or, xor, slt,...
+            // =====================
+            7'b0110011: begin
+                reg_wen = 1'b1;   // ghi kết quả về thanh ghi
+                a_sel   = 1'b0;   // ALU A = rs1
+                b_sel   = 1'b0;   // ALU B = rs2
+                wb_sel  = WB_ALU; // dữ liệu ghi về lấy từ ALU
 
                 case (funct3)
                     3'b000: alu_sel = (funct7 == 7'b0100000) ? ALU_SUB : ALU_ADD;
@@ -69,11 +78,14 @@ module control_unit (
                 endcase
             end
 
-            7'b0010011: begin // I-type arithmetic
+            // =====================
+            // I-type arithmetic: addi, andi, ori,...
+            // =====================
+            7'b0010011: begin
                 reg_wen = 1'b1;
                 imm_sel = IMM_I;
-                a_sel   = 1'b0;
-                b_sel   = 1'b1;
+                a_sel   = 1'b0;   // ALU A = rs1
+                b_sel   = 1'b1;   // ALU B = imm
                 wb_sel  = WB_ALU;
 
                 case (funct3)
@@ -88,60 +100,84 @@ module control_unit (
                 endcase
             end
 
-            7'b0000011: begin // load (lw)
+            // =====================
+            // Load: lw
+            // =====================
+            7'b0000011: begin
                 reg_wen = 1'b1;
                 imm_sel = IMM_I;
-                a_sel   = 1'b0;
-                b_sel   = 1'b1;
-                alu_sel = ALU_ADD;
-                wb_sel  = WB_MEM;
+                a_sel   = 1'b0;   // A = rs1
+                b_sel   = 1'b1;   // B = imm
+                alu_sel = ALU_ADD; // địa chỉ = rs1 + imm
+                wb_sel  = WB_MEM;  // ghi dữ liệu từ memory về thanh ghi
             end
 
-            7'b0100011: begin // store (sw)
+            // =====================
+            // Store: sw
+            // =====================
+            7'b0100011: begin
                 imm_sel = IMM_S;
-                a_sel   = 1'b0;
-                b_sel   = 1'b1;
-                alu_sel = ALU_ADD;
-                mem_rw  = 1'b1;
+                a_sel   = 1'b0;   // A = rs1
+                b_sel   = 1'b1;   // B = imm
+                alu_sel = ALU_ADD; // địa chỉ = rs1 + imm
+                mem_rw  = 1'b1;   // cho phép ghi memory
             end
 
-            7'b1100011: begin // branch
+            // =====================
+            // Branch: beq, bne, blt, bge, bltu, bgeu
+            // =====================
+            7'b1100011: begin
                 imm_sel = IMM_B;
-                a_sel   = 1'b1; // PC
-                b_sel   = 1'b1; // imm
+                a_sel   = 1'b1;   // A = PC
+                b_sel   = 1'b1;   // B = imm
                 alu_sel = ALU_ADD; // target = PC + imm
 
                 case (funct3)
-                    3'b000: pc_sel = br_eq;           // beq
-                    3'b001: pc_sel = ~br_eq;          // bne
-                    3'b100: pc_sel = br_lt;           // blt
-                    3'b101: pc_sel = br_eq | ~br_lt;  // bge
-                    3'b110: begin br_un = 1'b1; pc_sel = br_lt; end      // bltu
-                    3'b111: begin br_un = 1'b1; pc_sel = br_eq | ~br_lt; end // bgeu
+                    3'b000: pc_sel = br_eq;            // beq
+                    3'b001: pc_sel = ~br_eq;           // bne
+                    3'b100: pc_sel = br_lt;            // blt
+                    3'b101: pc_sel = br_eq | ~br_lt;   // bge
+                    3'b110: begin
+                        br_un = 1'b1;                  // unsigned
+                        pc_sel = br_lt;                // bltu
+                    end
+                    3'b111: begin
+                        br_un = 1'b1;                  // unsigned
+                        pc_sel = br_eq | ~br_lt;       // bgeu
+                    end
                 endcase
             end
 
-            7'b1101111: begin // jal
+            // =====================
+            // jal
+            // =====================
+            7'b1101111: begin
                 reg_wen = 1'b1;
                 imm_sel = IMM_J;
-                a_sel   = 1'b1; // PC
-                b_sel   = 1'b1; // imm
-                alu_sel = ALU_ADD;
-                wb_sel  = WB_PC4;
-                pc_sel  = 1'b1;
+                a_sel   = 1'b1;   // A = PC
+                b_sel   = 1'b1;   // B = imm
+                alu_sel = ALU_ADD; // target = PC + imm
+                wb_sel  = WB_PC4;  // rd = PC + 4
+                pc_sel  = 1'b1;    // nhảy
             end
 
-            7'b1100111: begin // jalr
+            // =====================
+            // jalr
+            // =====================
+            7'b1100111: begin
                 reg_wen = 1'b1;
                 imm_sel = IMM_I;
-                a_sel   = 1'b0; // rs1
-                b_sel   = 1'b1; // imm
-                alu_sel = ALU_ADD;
-                wb_sel  = WB_PC4;
-                pc_sel  = 1'b1;
+                a_sel   = 1'b0;   // A = rs1
+                b_sel   = 1'b1;   // B = imm
+                alu_sel = ALU_ADD; // target = rs1 + imm
+                wb_sel  = WB_PC4;  // rd = PC + 4
+                pc_sel  = 1'b1;    // nhảy
             end
 
-            7'b0110111: begin // lui
+            // =====================
+            // lui
+            // =====================
+            7'b0110111: begin
                 reg_wen = 1'b1;
                 imm_sel = IMM_U;
                 a_sel   = 1'b0;
@@ -150,14 +186,28 @@ module control_unit (
                 wb_sel  = WB_ALU;
             end
 
-            7'b0010111: begin // auipc
+            // =====================
+            // auipc
+            // =====================
+            7'b0010111: begin
                 reg_wen = 1'b1;
                 imm_sel = IMM_U;
-                a_sel   = 1'b1; // PC
-                b_sel   = 1'b1; // imm
+                a_sel   = 1'b1;   // A = PC
+                b_sel   = 1'b1;   // B = imm
                 alu_sel = ALU_ADD;
                 wb_sel  = WB_ALU;
             end
+
         endcase
     end
+
 endmodule
+
+
+// Đây là bộ điều khiển
+// Nhìn vào opcode, funct3, funct7 để quyết định:
+// ALU làm gì
+// lấy immediate kiểu nào
+// có ghi thanh ghi không
+// có ghi bộ nhớ không
+// có nhảy hay không

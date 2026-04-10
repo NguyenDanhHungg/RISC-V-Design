@@ -1,0 +1,142 @@
+Top single-cycle RISC-V CPU implementation in Verilog.
+
+1. Tổng quát hệ thống:
+- mỗi lệnh được thực hiện trọn vẹn trong 1 chu kỳ clock
+- trong cùng một chu kỳ, CPU làm luôn:
+    - lấy lệnh
+    - giải mã lệnh
+    - đọc thanh ghi
+    - tạo immediate
+    - tính toán bằng ALU
+    - truy cập bộ nhớ nếu cần
+    - ghi kết quả về thanh ghi
+    - cập nhật PC
+
+
+
+2. Các khối trong hệ thống:
+pc_reg.v:
+    - giữ giá trị PC hiện tại
+    - mỗi clock, PC nhận giá trị mới pc_next
+imem.v: 
+    - bộ nhớ lệnh
+    - dùng PC để đọc lệnh hiện tại instr
+reg_file.v:
+    - chứa 32 thanh ghi của RISC-V
+    - đọc rs1, rs2
+    - ghi vào rd nếu reg_wen = 1
+imm_gen.v:
+    - tách và mở rộng immediate từ instruction
+    - hỗ trợ các dạng I, S, B, U, J
+branch_comp.v:
+    - so sánh rs1_data và rs2_data
+    - tạo ra các tín hiệu nhảy:
+        br_eq = bằng nhau?
+        br_lt = nhỏ hơn?
+control_unit.v:
+    - nhìn vào opcode, funct3, funct7
+    - tạo ra tín hiệu điều khiển cho toàn hệ thống
+alu.v:
+    - thực hiện phép toán: cộng, trừ, and/or/xor, dịch bit, so sánh
+dmem.v:
+    - bộ nhớ dữ liệu
+    - dùng cho lw, sw
+top.v:
+    - khối lớn nhất
+    - nối tất cả các module lại thành một CPU hoàn chỉnh
+tb_top.v:
+    - testbench mô phỏng
+    - tạo clock, reset, xuất waveform
+
+
+
+3. Vai trò của top.v:
+top.v là trung tâm của hệ thống.
+Nó làm các việc chính:
+    - nhận clk, rst
+    - lấy pc hiện tại
+    - đọc instruction từ imem
+    - tách rs1, rs2, rd
+    - đọc dữ liệu thanh ghi
+    - sinh immediate
+    - gọi control unit để lấy tín hiệu điều khiển
+    - chọn ngõ vào ALU
+    - chạy ALU
+    - truy cập dmem (nếu cần)
+    - chọn dữ liệu wb
+    - quyết định pc_next
+
+
+
+4. Ý nghĩa các tín hiệu quan trọng:
+pc: Địa chỉ lệnh hiện tại.
+pc_plus4: Địa chỉ lệnh kế tiếp bình thường.
+pc_next: Giá trị PC sẽ nạp vào chu kỳ sau.
+instr: Lệnh 32-bit hiện tại đọc từ imem.
+rs1_data, rs2_data: Dữ liệu đọc ra từ 2 thanh ghi nguồn.
+imm: Immediate đã được tách và sign-extend.
+alu_a, alu_b: Hai toán hạng đưa vào ALU.
+alu_y: Kết quả ALU.
+dmem_rdata: Dữ liệu đọc từ data memory.
+wb_data: Dữ liệu cuối cùng ghi trở lại vào register file.
+
+
+
+5. Ý nghĩa các tín hiệu điều khiển
+reg_wen: Cho phép ghi vào thanh ghi đích.
+mem_rw: Cho phép ghi data memory.
+imm_sel: Chọn kiểu immediate: I, S, B, U, J
+alu_sel: Chọn phép toán ALU: add, sub, and, or, xor, slt, shift...
+a_sel: Chọn đầu vào A của ALU:
+    0 -> lấy rs1_data
+    1 -> lấy pc
+b_sel: Chọn đầu vào B của ALU:
+    0 -> lấy rs2_data
+    1 -> lấy imm
+wb_sel: Chọn dữ liệu ghi về thanh ghi:
+    từ memory
+    từ ALU
+    từ PC+4
+pc_sel: Chọn PC kế tiếp:
+    0 -> PC+4
+    1 -> nhảy/branch target
+br_un: Chọn so sánh unsigned hay signed cho branch
+
+
+
+6. Luồng hoạt động tổng quát của một lệnh:
+
+Bước 1: Fetch
+    - pc đưa vào imem
+    - imem xuất ra instr
+    - đồng thời tính pc_plus4 = pc + 4
+Bước 2: Decode
+    - instruction được tách thành:
+        opcode
+        funct3
+        funct7
+        rs1
+        rs2
+        rd
+    - reg_file đọc rs1_data, rs2_data
+    - imm_gen tạo imm
+    - control_unit sinh tín hiệu điều khiển
+Bước 3: Execute
+    - chọn alu_a từ PC hoặc rs1_data
+    - chọn alu_b từ imm hoặc rs2_data
+    - alu tính kết quả alu_y
+    - nếu là branch thì branch_comp cho biết điều kiện nhảy đúng hay sai
+Bước 4: Memory
+    - nếu là lw/sw, alu_y đóng vai trò địa chỉ
+    - dmem đọc hoặc ghi dữ liệu
+Bước 5: Write Back
+    - wb_sel chọn dữ liệu cuối cùng
+    - nếu reg_wen = 1, ghi dữ liệu đó vào rd
+Bước 6: Update PC
+    - nếu không branch/jump: pc_next = pc_plus4
+    - nếu branch/jump: pc_next = target
+
+7. Chạy mô phỏng: 
+iverilog -o sim -s tb_top *.v
+vvp sim
+gtkwave wave.vcd
