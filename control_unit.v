@@ -56,10 +56,7 @@ module control_unit (
         wb_sel  = WB_ALU;
 
         case (opcode)
-
-            // =====================
             // R-type: add, sub, and, or, xor, slt,...
-            // =====================
             7'b0110011: begin
                 reg_wen = 1'b1;   // ghi kết quả về thanh ghi
                 a_sel   = 1'b0;   // ALU A = rs1
@@ -78,9 +75,7 @@ module control_unit (
                 endcase
             end
 
-            // =====================
             // I-type arithmetic: addi, andi, ori,...
-            // =====================
             7'b0010011: begin
                 reg_wen = 1'b1;
                 imm_sel = IMM_I;
@@ -100,9 +95,7 @@ module control_unit (
                 endcase
             end
 
-            // =====================
             // Load: lw
-            // =====================
             7'b0000011: begin
                 reg_wen = 1'b1;
                 imm_sel = IMM_I;
@@ -112,9 +105,7 @@ module control_unit (
                 wb_sel  = WB_MEM;  // ghi dữ liệu từ memory về thanh ghi
             end
 
-            // =====================
             // Store: sw
-            // =====================
             7'b0100011: begin
                 imm_sel = IMM_S;
                 a_sel   = 1'b0;   // A = rs1
@@ -123,9 +114,7 @@ module control_unit (
                 mem_rw  = 1'b1;   // cho phép ghi memory
             end
 
-            // =====================
             // Branch: beq, bne, blt, bge, bltu, bgeu
-            // =====================
             7'b1100011: begin
                 imm_sel = IMM_B;
                 a_sel   = 1'b1;   // A = PC
@@ -148,9 +137,7 @@ module control_unit (
                 endcase
             end
 
-            // =====================
             // jal
-            // =====================
             7'b1101111: begin
                 reg_wen = 1'b1;
                 imm_sel = IMM_J;
@@ -161,9 +148,7 @@ module control_unit (
                 pc_sel  = 1'b1;    // nhảy
             end
 
-            // =====================
             // jalr
-            // =====================
             7'b1100111: begin
                 reg_wen = 1'b1;
                 imm_sel = IMM_I;
@@ -174,9 +159,7 @@ module control_unit (
                 pc_sel  = 1'b1;    // nhảy
             end
 
-            // =====================
             // lui
-            // =====================
             7'b0110111: begin
                 reg_wen = 1'b1;
                 imm_sel = IMM_U;
@@ -186,9 +169,7 @@ module control_unit (
                 wb_sel  = WB_ALU;
             end
 
-            // =====================
             // auipc
-            // =====================
             7'b0010111: begin
                 reg_wen = 1'b1;
                 imm_sel = IMM_U;

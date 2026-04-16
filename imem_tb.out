@@ -1,0 +1,63 @@
+#! /c/Source/iverilog-install/bin/vvp
+:ivl_version "12.0 (devel)" "(s20150603-1539-g2693dd32b)";
+:ivl_delay_selection "TYPICAL";
+:vpi_time_precision - 12;
+:vpi_module "C:\iverilog\lib\ivl\system.vpi";
+:vpi_module "C:\iverilog\lib\ivl\vhdl_sys.vpi";
+:vpi_module "C:\iverilog\lib\ivl\vhdl_textio.vpi";
+:vpi_module "C:\iverilog\lib\ivl\v2005_math.vpi";
+:vpi_module "C:\iverilog\lib\ivl\va_math.vpi";
+S_000002ca36c69800 .scope module, "imem_tb" "imem_tb" 2 3;
+ .timescale -9 -12;
+v000002ca36c66960_0 .var "addr", 31 0;
+v000002ca36c66a00_0 .net "instr", 31 0, L_000002ca36cb5c30;  1 drivers
+S_000002ca36c69e20 .scope module, "dut" "imem" 2 8, 3 1 0, S_000002ca36c69800;
+ .timescale 0 0;
+    .port_info 0 /INPUT 32 "addr";
+    .port_info 1 /OUTPUT 32 "instr";
+L_000002ca36cb5c30 .functor BUFZ 32, L_000002ca36c66aa0, C4<00000000000000000000000000000000>, C4<00000000000000000000000000000000>, C4<00000000000000000000000000000000>;
+v000002ca36c69990_0 .net *"_ivl_0", 31 0, L_000002ca36c66aa0;  1 drivers
+v000002ca36c67110_0 .net *"_ivl_3", 29 0, L_000002ca36c66b40;  1 drivers
+v000002ca36c69fb0_0 .net "addr", 31 0, v000002ca36c66960_0;  1 drivers
+v000002ca36c6be60_0 .net "instr", 31 0, L_000002ca36cb5c30;  alias, 1 drivers
+v000002ca36c6bf00 .array "mem", 255 0, 31 0;
+L_000002ca36c66aa0 .array/port v000002ca36c6bf00, L_000002ca36c66b40;
+L_000002ca36c66b40 .part v000002ca36c66960_0, 2, 30;
+    .scope S_000002ca36c69e20;
+T_0 ;
+    %vpi_call 3 11 "$readmemh", "imem.hex", v000002ca36c6bf00 {0 0 0};
+    %end;
+    .thread T_0;
+    .scope S_000002ca36c69800;
+T_1 ;
+    %vpi_call 2 14 "$dumpfile", "imem_tb.vcd" {0 0 0};
+    %vpi_call 2 15 "$dumpvars", 32'sb00000000000000000000000000000000, S_000002ca36c69800 {0 0 0};
+    %pushi/vec4 0, 0, 32;
+    %store/vec4 v000002ca36c66960_0, 0, 32;
+    %delay 10000, 0;
+    %vpi_call 2 19 "$display", "addr=%h -> instr=%h", v000002ca36c66960_0, v000002ca36c66a00_0 {0 0 0};
+    %pushi/vec4 4, 0, 32;
+    %store/vec4 v000002ca36c66960_0, 0, 32;
+    %delay 10000, 0;
+    %vpi_call 2 22 "$display", "addr=%h -> instr=%h", v000002ca36c66960_0, v000002ca36c66a00_0 {0 0 0};
+    %pushi/vec4 8, 0, 32;
+    %store/vec4 v000002ca36c66960_0, 0, 32;
+    %delay 10000, 0;
+    %vpi_call 2 25 "$display", "addr=%h -> instr=%h", v000002ca36c66960_0, v000002ca36c66a00_0 {0 0 0};
+    %pushi/vec4 12, 0, 32;
+    %store/vec4 v000002ca36c66960_0, 0, 32;
+    %delay 10000, 0;
+    %vpi_call 2 28 "$display", "addr=%h -> instr=%h", v000002ca36c66960_0, v000002ca36c66a00_0 {0 0 0};
+    %pushi/vec4 16, 0, 32;
+    %store/vec4 v000002ca36c66960_0, 0, 32;
+    %delay 10000, 0;
+    %vpi_call 2 31 "$display", "addr=%h -> instr=%h", v000002ca36c66960_0, v000002ca36c66a00_0 {0 0 0};
+    %vpi_call 2 33 "$finish" {0 0 0};
+    %end;
+    .thread T_1;
+# The file index is used to find the file name in the following table.
+:file_names 4;
+    "N/A";
+    "<interactive>";
+    "imem_tb.v";
+    "imem.v";

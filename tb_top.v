@@ -1,3 +1,5 @@
+`timescale 1ns/1ps
+
 module tb_top;
     reg clk;   // clock mô phỏng
     reg rst;   // reset mô phỏng
